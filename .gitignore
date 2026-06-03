@@ -1,3 +1,6 @@
+# Data
+**/*.parquet
+
 # Nix
 .direnv/
 result
