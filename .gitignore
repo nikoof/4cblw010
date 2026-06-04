@@ -19,6 +19,7 @@ lightning_logs/
 *.pt
 *.ckpt
 !models/*.pt2
+!models/*.ckpt
 
 #######################################
 

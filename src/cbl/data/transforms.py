@@ -23,6 +23,9 @@ class Interpolate():
         self.target_x = np.linspace(target_range[0], target_range[1], target_len)
 
     def __call__(self, wavenumbers: _arr_T, transmittance: _arr_T) -> _arr_T:
+        if len(transmittance) == len(self.target_x):
+            return transmittance
+
         order = np.argsort(wavenumbers)
         wavenumbers, transmittance = wavenumbers[order], transmittance[order]
         interp = interp1d(wavenumbers, transmittance, kind=self.kind, bounds_error=False, fill_value=(transmittance[0], transmittance[-1]))
