@@ -1,5 +1,6 @@
 # Data
 **/*.parquet
+!lab.parquet
 
 # Nix
 .direnv/
