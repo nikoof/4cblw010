@@ -21,6 +21,7 @@ if __name__ == "__main__":
     for path in args.input:
         df = pd.read_parquet(path)
         assert set(COMMON_COLUMNS) <= set(df.columns), f"Dataset {path} is missing expected column(s) {set(COMMON_COLUMNS) - set(df.columns)}"
+        df = df[COMMON_COLUMNS]
 
         logs.append([str(path.stem), len(df)])
 
@@ -29,7 +30,9 @@ if __name__ == "__main__":
         df["wavenumber"] = df["wavenumber"].apply(lambda x: x.astype(np.float32))
         dfs.append(df)
 
-    merged_df = pd.concat(dfs, axis=0).drop(columns=["index"])
+    merged_df = pd.concat(dfs, axis=0)
+    if "index" in merged_df.columns:
+        merged_df.drop(columns=["index"], inplace=True)
     if args.deduplicate:
         merged_df = merged_df.drop_duplicates(subset=["smiles"])
     merged_df.to_parquet(args.output, index=False)

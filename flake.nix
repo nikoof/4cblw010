@@ -92,6 +92,7 @@
             torchvision
             torchmetrics
             lightning
+            jsonargparse
             tensorboard
 
             datasets
@@ -100,7 +101,7 @@
             diffusers
             accelerate
             hf-xet
-          ]
+          ] ++ jsonargparse.optional-dependencies.signatures
         );
 
         packages = [
