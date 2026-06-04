@@ -1,4 +1,5 @@
 from cbl.utils import SMARTS_STRINGS
+from cbl.data.transforms import Interpolate
 
 import torch
 from torch import Tensor
@@ -7,64 +8,72 @@ from torch.utils import data
 import lightning as L
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pathlib import Path
-from typing import override
+from typing import override, Callable
 
 class IRDataset(data.Dataset[tuple[Tensor, Tensor]]):
-    """Dataset for IR spectra using only samples of fixed dimension."""
+    """Dataset for IR spectra."""
 
     LABELS: list[str] =  list(SMARTS_STRINGS.keys())
     COLUMNS: list[str] = ["smiles", "wavenumber", "transmittance"] + LABELS
 
     df: pd.DataFrame
-    dimension: int
+    transform: None | Callable[[npt.NDArray[...], npt.NDArray[...]], npt.NDArray[...]]
 
-    def __init__(self, path: str | Path, dimension: int = 1800):
-        self.dimension = dimension
+    def __init__(self, path: str | Path, transform: None | Callable[[npt.NDArray[...], npt.NDArray[...]], npt.NDArray[...]]):
         self.df = pd.read_parquet(path)
         assert set(self.COLUMNS) <= set(self.df.columns), f"Dataset source missing required columns: {set(self.COLUMNS) - set(self.df.columns)}"
         self.df = self.df[self.COLUMNS]
-        self.df = self.df[self.df["transmittance"].apply(len) == self.dimension]
         self.df = self.df.drop_duplicates(subset=["smiles"])
         self.df = self.df.reset_index(drop=True)
+
+        self.transform = transform
 
     def __len__(self):
         return len(self.df)
 
     @override
     def __getitem__(self, idx: int):
-        features = torch.tensor(self.df.loc[idx, "transmittance"], dtype=torch.float)
-        labels = torch.tensor(self.df[self.LABELS].values, dtype=torch.float)
+        wavenumber = np.asarray(self.df.loc[idx, "wavenumber"])
+        transmittance = np.asarray(self.df.loc[idx, "transmittance"])
+        labels = self.df[self.LABELS].values
+
+        if self.transform is not None:
+            transmittance = self.transform(wavenumber, transmittance)
+
+        features = torch.tensor(transmittance, dtype=torch.float)
+        labels = torch.tensor(labels, dtype=torch.float)
         return features, labels[idx]
 
 
 class IRDataModule(L.LightningDataModule):
     path: Path
     batch_size: int
-    dimension: int
     num_workers: int
     split: tuple[float, float, float]
+    transform: None | Callable[[npt.NDArray[...], npt.NDArray[...]], npt.NDArray[...]]
 
     def __init__(
         self,
         path: str,
-        dimension: int,
+        transform = None,
         batch_size: int = 64,
         num_workers: int = 10,
-        split: tuple[float, float, float] = (0.7, 0.15, 0.15)
+        split: tuple[float, float, float] = (0.7, 0.15, 0.15),
     ):
         super().__init__()
         self.path = Path(path)
-        self.dimension = dimension
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.split = split
+        self.transform = transform
 
     @override
     def prepare_data(self):
-        self.dataset = IRDataset(self.path, self.dimension)
+        self.dataset = IRDataset(self.path, transform=self.transform)
 
     @override
     def setup(self, stage: str):

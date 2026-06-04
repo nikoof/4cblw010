@@ -1,5 +1,5 @@
 # lightning.pytorch==2.6.4
-seed_everything: 0
+seed_everything: 42
 trainer:
   accelerator: auto
   strategy: auto
@@ -59,8 +59,13 @@ model:
   lr: 0.0001
   weight_decay: 0.01
 data:
-  path: datasets/merged.parquet
-  dimension: 1800
+  path: datasets/mms.parquet
+  transform:
+    class_path: cbl.data.transforms.Interpolate
+    init_args:
+      target_range: [4000, 400]
+      target_len: 1800
+      kind: "linear"
   batch_size: 128
   split:
   - 0.7
