@@ -28,9 +28,11 @@ class Interpolate():
             wavenumbers, transmittance = wavenumbers[order], transmittance[order]
             interp = interp1d(wavenumbers, transmittance, kind=self.kind, bounds_error=False, fill_value=(transmittance[0], transmittance[-1]))
             res = interp(self.target_x)
-        
+        else:
+            res = transmittance
+
         # normalise every spectrum to [0, 1] range using min-max normalisation
-        y_min, y_max = transmittance.min(), transmittance.max()
+        y_min, y_max = res.min(), res.max()
         if y_max == y_min: 
-            return np.zeros_like(transmittance)
+            return np.zeros_like(res)
         return (res - y_min) / (y_max - y_min)
