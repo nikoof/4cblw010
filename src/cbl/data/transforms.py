@@ -23,11 +23,14 @@ class Interpolate():
         self.target_x = np.linspace(target_range[0], target_range[1], target_len)
 
     def __call__(self, wavenumbers: _arr_T, transmittance: _arr_T) -> _arr_T:
-        if len(transmittance) == len(self.target_x):
-            return transmittance
-
-        order = np.argsort(wavenumbers)
-        wavenumbers, transmittance = wavenumbers[order], transmittance[order]
-        interp = interp1d(wavenumbers, transmittance, kind=self.kind, bounds_error=False, fill_value=(transmittance[0], transmittance[-1]))
-        res = interp(self.target_x)
-        return res
+        if len(transmittance) != len(self.target_x):
+            order = np.argsort(wavenumbers)
+            wavenumbers, transmittance = wavenumbers[order], transmittance[order]
+            interp = interp1d(wavenumbers, transmittance, kind=self.kind, bounds_error=False, fill_value=(transmittance[0], transmittance[-1]))
+            res = interp(self.target_x)
+        
+        # normalise every spectrum to [0, 1] range using min-max normalisation
+        y_min, y_max = transmittance.min(), transmittance.max()
+        if y_max == y_min: 
+            return np.zeros_like(transmittance)
+        return (res - y_min) / (y_max - y_min)
