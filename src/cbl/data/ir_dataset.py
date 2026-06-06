@@ -79,17 +79,32 @@ class IRDataModule(L.LightningDataModule):
     def setup(self, stage: str):
         self.train_dataset, self.val_dataset, self.test_dataset = data.random_split(self.dataset, self.split)
 
+        train_df = self.dataset.df.iloc[self.train_dataset.indices]
+
+        label_sum = train_df[self.dataset.LABELS].sum().replace(0, 1e-6)
+        w = 1 / label_sum / len(train_df)
+
+        weights = ((1 / w) * train_df[self.dataset.LABELS] + 1e-4).sum(axis=1)
+
+        train_weights = torch.tensor(weights.values, dtype=torch.double)
+
+        self.sampler = data.WeightedRandomSampler(
+            weights=train_weights,
+            num_samples=len(train_weights),
+            replacement=True
+        )
+
     @override
     def train_dataloader(self):
-        return data.DataLoader(self.train_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(self.train_dataset, batch_size=self.batch_size, sampler=self.sampler, num_workers=self.num_workers)
 
     @override
     def val_dataloader(self):
-        return data.DataLoader(self.val_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     @override
     def test_dataloader(self):
-        return data.DataLoader(self.test_dataset, batch_size=self.batch_size, num_workers=self.num_workers)
+        return data.DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     @override
     def predict_dataloader(self):
