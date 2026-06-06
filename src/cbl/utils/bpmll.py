@@ -91,6 +91,32 @@ def bpmll_with_global_threshold(logits: Tensor, threshold: Tensor, targets: Tens
     else:
         raise ValueError("Reduction must be one of 'mean', 'sum', 'none'")
 
+def bpmll_with_split_thresholds(logits: Tensor, thresholds: Tensor, targets: Tensor, reduction: str = "mean") -> Tensor:
+    Yp_mask, coYp_mask = targets.bool(), ~targets.bool()
+    preds_r, preds_s = logits.unsqueeze(2), logits.unsqueeze(1)
+
+    mat_mask = Yp_mask.unsqueeze(2) & coYp_mask.unsqueeze(1)
+
+    num1 = torch.exp(-(preds_r - preds_s) * mat_mask).sum(dim=(1,2))
+    num2 = torch.exp(-(logits - thresholds)[Yp_mask]).sum(dim=-1)
+    num3 = torch.exp(-(thresholds - logits)[coYp_mask]).sum(dim=-1)
+    numerator = num1 + num2 + num3
+
+    n_Yp = Yp_mask.sum(dim=1)
+    n_coYp = coYp_mask.sum(dim=1)
+    denominator = n_Yp * n_coYp + n_Yp + n_coYp
+
+    loss = numerator / denominator
+
+    if reduction == "mean":
+        return loss.mean()
+    elif reduction == "sum":
+        return loss.sum()
+    elif reduction == "none":
+        return loss
+    else:
+        raise ValueError("Reduction must be one of 'mean', 'sum', 'none'")
+
 class BPMLL(nn.Module):
     reduction: str
 
@@ -113,3 +139,14 @@ class BPMLLWithGlobalThreshold(nn.Module):
     @override
     def forward(self, predictions: Tensor, threshold: Tensor, targets: Tensor) -> Tensor:
         return bpmll_with_global_threshold(predictions, threshold, targets, self.reduction)
+
+class BPMLLWithSplitThreshold(nn.Module):
+    reduction: str
+
+    def __init__(self, reduction: str = "mean"):
+        super().__init__()
+        self.reduction = reduction
+
+    @override
+    def forward(self, predictions: Tensor, thresholds: Tensor, targets: Tensor) -> Tensor:
+        return bpmll_with_split_thresholds(predictions, thresholds, targets, self.reduction)
