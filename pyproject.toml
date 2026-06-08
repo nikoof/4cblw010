@@ -1,0 +1,38 @@
+[project]
+name = "cbl"
+version = "0.1.0"
+description = "Detection of protein spiking using nitrogen rich materials"
+readme = "README.md"
+requires-python = ">=3.13"
+authors = [
+    { name = "Nicolas Bratoveanu", email = "n.bratoveanu@student.tue.nl" },
+    { name = "Melisa Gerceker", email = "m.gerceker@student.tue.nl" },
+    { name = "Yuxin Wang", email = "y.wang23@student.tue.nl" }
+]
+dependencies = [
+    "jcamp",
+    "lightning>=2.6.5",
+    "numpy>=2.2.6",
+    "pandas>=2.3.3",
+    "pyarrow>=24.0.0",
+    "rdkit>=2026.3.3",
+    "scipy>=1.15.3",
+    "torch>=2.12.0",
+    "torchmetrics>=1.9.0",
+]
+
+[tool.uv.sources]
+jcamp = { git = "https://github.com/nzhagen/jcamp" }
+
+[project.scripts]
+trainer = "cbl.trainer:cli_main"
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
