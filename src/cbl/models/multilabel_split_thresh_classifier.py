@@ -34,17 +34,15 @@ class MultiLabelSplitThreshClassifier(L.LightningModule):
 
 
         self.validation_metrics = torchmetrics.MetricCollection([
-            torchmetrics.Accuracy(task="multilabel", num_labels=self.num_labels),
-            torchmetrics.F1Score(task="multilabel", num_labels=self.num_labels),
-            torchmetrics.HammingDistance(task="multilabel", num_labels=self.num_labels),
-            # torchmetrics.AUROC(task="multilabel", num_labels=self.num_labels),
+            torchmetrics.Accuracy(task="multilabel", average="weighted", num_labels=self.num_labels),
+            torchmetrics.F1Score(task="multilabel", average="weighted", num_labels=self.num_labels),
+            torchmetrics.HammingDistance(task="multilabel", average="weighted", num_labels=self.num_labels),
         ], prefix="val_")
 
         self.test_metrics = torchmetrics.MetricCollection([
-            torchmetrics.Accuracy(task="multilabel", num_labels=self.num_labels),
-            torchmetrics.F1Score(task="multilabel", num_labels=self.num_labels),
-            torchmetrics.HammingDistance(task="multilabel", num_labels=self.num_labels),
-            #torchmetrics.AUROC(task="multilabel", num_labels=self.num_labels),
+            torchmetrics.Accuracy(task="multilabel", average="weighted", num_labels=self.num_labels),
+            torchmetrics.F1Score(task="multilabel", average="weighted", num_labels=self.num_labels),
+            torchmetrics.HammingDistance(task="multilabel", average="weighted", num_labels=self.num_labels),
         ], prefix="test_")
 
         self.save_hyperparameters()
